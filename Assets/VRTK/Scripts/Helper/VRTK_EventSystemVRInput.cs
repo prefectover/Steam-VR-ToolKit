@@ -9,6 +9,8 @@
     {
         public List<VRTK_UIPointer> pointers;
 
+        private bool uiClickPressed = false;
+
         public void Initialise()
         {
             pointers = new List<VRTK_UIPointer>();
@@ -159,16 +161,25 @@
 
                 if (pointer.pointerEventData.eligibleForClick)
                 {
+
                     if (!IsHovering(pointer))
                     {
                         ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerUpHandler);
                         pointer.pointerEventData.pointerPress = null;
                     }
+                    if (!uiClickPressed)
+                    {
+                        ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerClickHandler);
+                        ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerUpHandler);
+                        //pointer.pointerEventData.pointerPress = null;
+                        uiClickPressed = true;
+                    }
                 }
                 else
                 {
-                    ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerClickHandler);
-                    ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerUpHandler);
+                    uiClickPressed = false;
+                    //ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerClickHandler);
+                    //ExecuteEvents.ExecuteHierarchy(pointer.pointerEventData.pointerPress, pointer.pointerEventData, ExecuteEvents.pointerUpHandler);
                     pointer.pointerEventData.pointerPress = null;
                 }
             }
@@ -252,14 +263,14 @@
                 if (pointer.pointerEventData.scrollDelta != Vector2.zero)
                 {
                     var target = ExecuteEvents.ExecuteHierarchy(result.gameObject, pointer.pointerEventData, ExecuteEvents.scrollHandler);
-                    if(target)
+                    if (target)
                     {
                         scrollWheelVisible = true;
                     }
                 }
             }
 
-            if(pointer.controllerRenderModel)
+            if (pointer.controllerRenderModel)
             {
                 VRTK_SDK_Bridge.SetControllerRenderModelWheel(pointer.controllerRenderModel, scrollWheelVisible);
             }
