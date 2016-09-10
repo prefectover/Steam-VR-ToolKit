@@ -91,7 +91,10 @@ namespace VRTK
             {
                 var jointPosition = ProjectForwardBeam();
                 var downPosition = ProjectDownBeam(jointPosition);
-                DisplayCurvedBeam(jointPosition, downPosition);
+                PlotCurvedBeam(jointPosition, downPosition);
+                var updatedJointPosition = Vector3.zero;
+                downPosition = DetectCurvedBeamCollision(downPosition, jointPosition, out updatedJointPosition);
+                DisplayCurvedBeam(updatedJointPosition, downPosition);
                 SetPointerCursor(downPosition);
             }
         }
@@ -261,7 +264,7 @@ namespace VRTK
             {
                 if (pointerContactTarget != null)
                 {
-                    base.PointerOut();
+                // base.PointerOut();
                 }
                 pointerContactTarget = null;
                 contactNormal = Vector3.zero;
@@ -273,7 +276,7 @@ namespace VRTK
                 pointerContactTarget = collidedWith.transform;
                 contactNormal = collidedWith.normal;
                 destinationPosition = projectedBeamDownRaycast.GetPoint(collidedWith.distance);
-                base.PointerIn();
+                //base.PointerIn();
             }
 
             return destinationPosition;
@@ -303,6 +306,65 @@ namespace VRTK
             }
         }
 
+        private void PlotCurvedBeam(Vector3 jointPosition, Vector3 downPosition)
+        {
+            Vector3[] beamPoints = new Vector3[]
+            {
+                transform.position,
+                jointPosition + new Vector3(0f, beamCurveOffset, 0f),
+                downPosition,
+                downPosition,
+            };
+
+            curvedBeam.SetPoints(beamPoints, beamTraceMaterial ?? pointerMaterial);
+        }
+
+        private Vector3 DetectCurvedBeamCollision(Vector3 originalDownPosition, Vector3 currentJointPosition, out Vector3 updatedJointPosition)
+        {
+            updatedJointPosition = currentJointPosition;
+
+            var checkPoints = curvedBeam.GetPoints(1);
+            for (int i = 0; i < checkPoints.Length; i++)
+            {
+                if (i + 1 < checkPoints.Length)
+                {
+                    var startCast = (checkPoints[i].Equals(checkPoints[i + 1]) ? checkPoints[i - 1] : checkPoints[i]);
+                    var heading = (checkPoints[i + 1] - startCast);
+                    var endCast = heading / heading.magnitude;
+
+                    Ray projectedBeamDownRaycast = new Ray(startCast, endCast);
+                    Debug.DrawRay(startCast, endCast, Color.red);
+                    RaycastHit collidedWith;
+                    var downRayHit = Physics.Raycast(projectedBeamDownRaycast, out collidedWith, float.PositiveInfinity, ~layersToIgnore);
+
+                    if ((i == checkPoints.Length - 1) && (!downRayHit || (pointerContactTarget && pointerContactTarget != collidedWith.transform)))
+                    {
+                        if (pointerContactTarget != null)
+                        {
+                            base.PointerOut();
+                        }
+                        pointerContactTarget = null;
+                        contactNormal = Vector3.zero;
+                        destinationPosition = projectedBeamDownRaycast.GetPoint(0f);
+                        //updatedJointPosition = new Vector3(currentJointPosition.x, currentJointPosition.y, destinationPosition.z);
+                        return destinationPosition;
+                    }
+
+                    if (downRayHit)
+                    {
+                        pointerContactTarget = collidedWith.transform;
+                        contactNormal = collidedWith.normal;
+                        destinationPosition = projectedBeamDownRaycast.GetPoint(collidedWith.distance);
+                        base.PointerIn();
+                        //updatedJointPosition = new Vector3(currentJointPosition.x, currentJointPosition.y, destinationPosition.z);
+                        return destinationPosition;
+                    }
+                }
+            }
+
+            return originalDownPosition;
+        }
+
         private void DisplayCurvedBeam(Vector3 jointPosition, Vector3 downPosition)
         {
             Vector3[] beamPoints = new Vector3[]
@@ -312,7 +374,9 @@ namespace VRTK
                 downPosition,
                 downPosition,
             };
+
             curvedBeam.SetPoints(beamPoints, beamTraceMaterial ?? pointerMaterial);
+
             if (pointerVisibility != pointerVisibilityStates.Always_Off)
             {
                 curvedBeam.TogglePoints(true);

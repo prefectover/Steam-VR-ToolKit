@@ -63,6 +63,7 @@ namespace VRTK
         }
 
         private Vector3[] points;
+        private Vector3[] calculatedPoints;
         private GameObject[] items;
         private BezierControlPointMode[] modes;
         private bool loop;
@@ -70,11 +71,12 @@ namespace VRTK
         private bool customTracer;
         private bool rescalePointerTracer;
 
-        public void Create(int setFrequency, float radius, GameObject tracer, bool rescaleTracer=false)
+        public void Create(int setFrequency, float radius, GameObject tracer, bool rescaleTracer = false)
         {
             float circleSize = radius / 8;
 
             frequency = setFrequency;
+            calculatedPoints = new Vector3[frequency];
             items = new GameObject[frequency];
             for (int f = 0; f < items.Length; f++)
             {
@@ -102,6 +104,29 @@ namespace VRTK
         public void TogglePoints(bool state)
         {
             gameObject.SetActive(state);
+        }
+
+        public Vector3[] GetPoints(int everyNth = 1)
+        {
+            if (everyNth >= calculatedPoints.Length)
+            {
+                everyNth = calculatedPoints.Length - 1;
+            }
+
+            if (everyNth > 1 && everyNth <= calculatedPoints.Length)
+            {
+                var tmpPoints = new Vector3[(calculatedPoints.Length / everyNth) + 1];
+                var tmpIndex = 0;
+                for (int i = 0; i < calculatedPoints.Length; i += everyNth)
+                {
+                    tmpPoints[tmpIndex] = calculatedPoints[i];
+                    tmpIndex++;
+                }
+                tmpPoints[tmpPoints.Length - 1] = calculatedPoints[calculatedPoints.Length - 1];
+                return tmpPoints;
+            }
+
+            return calculatedPoints;
         }
 
         private GameObject CreateSphere()
@@ -132,12 +157,9 @@ namespace VRTK
             }
         }
 
-        private int ControlPointCount
+        private int ControlPointCount()
         {
-            get
-            {
-                return points.Length;
-            }
+            return points.Length;
         }
 
         private Vector3 GetControlPoint(int index)
@@ -283,6 +305,7 @@ namespace VRTK
 
                 Vector3 position = GetPoint(f * stepSize);
                 items[f].transform.position = position;
+                calculatedPoints[f] = position;
 
                 Vector3 nextPosition = GetPoint((f + 1) * stepSize);
                 Vector3 offset = nextPosition - position;
@@ -295,7 +318,7 @@ namespace VRTK
                     if (rescalePointerTracer)
                     {
                         Vector3 scl = items[f].transform.localScale;
-                        scl.z = offset.magnitude/2f; // (assuming a center-based scaling)
+                        scl.z = offset.magnitude / 2f; // (assuming a center-based scaling)
                         items[f].transform.localScale = scl;
                     }
                 }
