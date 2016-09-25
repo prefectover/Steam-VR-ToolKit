@@ -1,25 +1,38 @@
+﻿#if (SDK_STEAMVR)
 namespace VRTK
 {
     using UnityEngine;
     using Valve.VR;
 
-    public class VRTK_SDK_Bridge : MonoBehaviour
+    public class VRTK_SteamVRSDK : VRTK_BaseSDK
     {
-        private static SteamVR_ControllerManager cachedControllerManager;
-        private static Transform cachedHeadset;
-        private static Transform cachedHeadsetCamera;
-        private static Transform cachedPlayArea;
+        private SteamVR_ControllerManager cachedControllerManager;
 
-        public static string defaultAttachPointPath = "Model/tip/attach";
-        public static string defaultTriggerModelPath = "Model/trigger";
-        public static string defaultGripLeftModelPath = "Model/lgrip";
-        public static string defaultGripRightModelPath = "Model/rgrip";
-        public static string defaultTouchpadModelPath = "Model/trackpad";
-        public static string defaultApplicationMenuModelPath = "Model/button";
-        public static string defaultSystemModelPath = "Model/sys_button";
-        public static string defaultBodyModelPath = "Model/body";
+        public override string GetControllerElementPath(ControllerElelements element)
+        {
+            switch (element)
+            {
+                case ControllerElelements.AttachPoint:
+                    return "Model/tip/attach";
+                case ControllerElelements.Trigger:
+                    return "Model/trigger";
+                case ControllerElelements.GripLeft:
+                    return "Model/lgrip";
+                case ControllerElelements.GripRight:
+                    return "Model/rgrip";
+                case ControllerElelements.Touchpad:
+                    return "Model/trackpad";
+                case ControllerElelements.ApplicationMenu:
+                    return "Model/button";
+                case ControllerElelements.SystemMenu:
+                    return "Model/sys_button";
+                case ControllerElelements.Body:
+                    return "Model/body";
+            }
+            return null;
+        }
 
-        public static GameObject GetTrackedObject(GameObject obj, out uint index)
+        public override GameObject GetTrackedObject(GameObject obj, out uint index)
         {
             var trackedObject = obj.GetComponent<SteamVR_TrackedObject>();
             index = 0;
@@ -31,7 +44,7 @@ namespace VRTK
             return null;
         }
 
-        public static GameObject GetTrackedObjectByIndex(uint index)
+        public override GameObject GetTrackedObjectByIndex(uint index)
         {
             //attempt to get from cache first
             if (VRTK_ObjectCache.trackedControllers.ContainsKey(index))
@@ -51,14 +64,14 @@ namespace VRTK
             return null;
         }
 
-        public static uint GetIndexOfTrackedObject(GameObject trackedObject)
+        public override uint GetIndexOfTrackedObject(GameObject trackedObject)
         {
             uint index = 0;
             GetTrackedObject(trackedObject, out index);
             return index;
         }
 
-        public static Transform GetTrackedObjectOrigin(GameObject obj)
+        public override Transform GetTrackedObjectOrigin(GameObject obj)
         {
             var trackedObject = obj.GetComponent<SteamVR_TrackedObject>();
             if (trackedObject)
@@ -68,7 +81,7 @@ namespace VRTK
             return null;
         }
 
-        public static bool TrackedIndexIsController(uint index)
+        public override bool TrackedIndexIsController(uint index)
         {
             var system = OpenVR.System;
             if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
@@ -78,7 +91,7 @@ namespace VRTK
             return false;
         }
 
-        public static GameObject GetControllerLeftHand()
+        public override GameObject GetControllerLeftHand()
         {
             var controllerManager = GetControllerManager();
             if (controllerManager)
@@ -88,7 +101,7 @@ namespace VRTK
             return null;
         }
 
-        public static GameObject GetControllerRightHand()
+        public override GameObject GetControllerRightHand()
         {
             var controllerManager = GetControllerManager();
             if (controllerManager)
@@ -98,7 +111,7 @@ namespace VRTK
             return null;
         }
 
-        public static bool IsControllerLeftHand(GameObject controller)
+        public override bool IsControllerLeftHand(GameObject controller)
         {
             var controllerManager = GetControllerManager();
             if (controllerManager && controller == controllerManager.left)
@@ -108,7 +121,7 @@ namespace VRTK
             return false;
         }
 
-        public static bool IsControllerRightHand(GameObject controller)
+        public override bool IsControllerRightHand(GameObject controller)
         {
             var controllerManager = GetControllerManager();
             if (controllerManager && controller == controllerManager.right)
@@ -118,7 +131,7 @@ namespace VRTK
             return false;
         }
 
-        public static Transform GetHeadset()
+        public override Transform GetHeadset()
         {
             if (cachedHeadset == null)
             {
@@ -131,7 +144,7 @@ namespace VRTK
             return cachedHeadset;
         }
 
-        public static Transform GetHeadsetCamera()
+        public override Transform GetHeadsetCamera()
         {
             if (cachedHeadsetCamera == null)
             {
@@ -140,7 +153,12 @@ namespace VRTK
             return cachedHeadsetCamera;
         }
 
-        public static Transform GetPlayArea()
+        public override GameObject GetHeadsetCamera(GameObject obj)
+        {
+            return obj.GetComponent<SteamVR_Camera>().gameObject;
+        }
+
+        public override Transform GetPlayArea()
         {
             if (cachedPlayArea == null)
             {
@@ -149,7 +167,7 @@ namespace VRTK
             return cachedPlayArea;
         }
 
-        public static Vector3[] GetPlayAreaVertices(GameObject playArea)
+        public override Vector3[] GetPlayAreaVertices(GameObject playArea)
         {
             var area = playArea.GetComponent<SteamVR_PlayArea>();
             if (area)
@@ -159,7 +177,7 @@ namespace VRTK
             return null;
         }
 
-        public static float GetPlayAreaBorderThickness(GameObject playArea)
+        public override float GetPlayAreaBorderThickness(GameObject playArea)
         {
             var area = playArea.GetComponent<SteamVR_PlayArea>();
             if (area)
@@ -169,23 +187,23 @@ namespace VRTK
             return 0f;
         }
 
-        public static bool IsPlayAreaSizeCalibrated(GameObject playArea)
+        public override bool IsPlayAreaSizeCalibrated(GameObject playArea)
         {
             var area = playArea.GetComponent<SteamVR_PlayArea>();
             return (area.size == SteamVR_PlayArea.Size.Calibrated);
         }
 
-        public static bool IsDisplayOnDesktop()
+        public override bool IsDisplayOnDesktop()
         {
             return (OpenVR.System == null || OpenVR.System.IsDisplayOnDesktop());
         }
 
-        public static bool ShouldAppRenderWithLowResources()
+        public override bool ShouldAppRenderWithLowResources()
         {
             return (OpenVR.Compositor != null && OpenVR.Compositor.ShouldAppRenderWithLowResources());
         }
 
-        public static void ForceInterleavedReprojectionOn(bool force)
+        public override void ForceInterleavedReprojectionOn(bool force)
         {
             if (OpenVR.Compositor != null)
             {
@@ -193,13 +211,13 @@ namespace VRTK
             }
         }
 
-        public static GameObject GetControllerRenderModel(GameObject controller)
+        public override GameObject GetControllerRenderModel(GameObject controller)
         {
             var renderModel = (controller.GetComponent<SteamVR_RenderModel>() ? controller.GetComponent<SteamVR_RenderModel>() : controller.GetComponentInChildren<SteamVR_RenderModel>());
             return renderModel.gameObject;
         }
 
-        public static void SetControllerRenderModelWheel(GameObject renderModel, bool state)
+        public override void SetControllerRenderModelWheel(GameObject renderModel, bool state)
         {
             var model = renderModel.GetComponent<SteamVR_RenderModel>();
             if (model)
@@ -208,12 +226,12 @@ namespace VRTK
             }
         }
 
-        public static void HeadsetFade(Color color, float duration, bool fadeOverlay = false)
+        public override void HeadsetFade(Color color, float duration, bool fadeOverlay = false)
         {
             SteamVR_Fade.Start(color, duration, fadeOverlay);
         }
 
-        public static bool HasHeadsetFade(GameObject obj)
+        public override bool HasHeadsetFade(GameObject obj)
         {
             if (obj.GetComponentInChildren<SteamVR_Fade>())
             {
@@ -222,7 +240,7 @@ namespace VRTK
             return false;
         }
 
-        public static void AddHeadsetFade(Transform camera)
+        public override void AddHeadsetFade(Transform camera)
         {
             if (camera && !camera.gameObject.GetComponent<SteamVR_Fade>())
             {
@@ -230,7 +248,7 @@ namespace VRTK
             }
         }
 
-        public static void HapticPulseOnIndex(uint index, ushort durationMicroSec = 500)
+        public override void HapticPulseOnIndex(uint index, ushort durationMicroSec = 500)
         {
             if (index < uint.MaxValue)
             {
@@ -239,7 +257,7 @@ namespace VRTK
             }
         }
 
-        public static Vector3 GetVelocityOnIndex(uint index)
+        public override Vector3 GetVelocityOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -249,7 +267,7 @@ namespace VRTK
             return device.velocity;
         }
 
-        public static Vector3 GetAngularVelocityOnIndex(uint index)
+        public override Vector3 GetAngularVelocityOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -259,7 +277,7 @@ namespace VRTK
             return device.angularVelocity;
         }
 
-        public static Vector2 GetTouchpadAxisOnIndex(uint index)
+        public override Vector2 GetTouchpadAxisOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -269,7 +287,7 @@ namespace VRTK
             return device.GetAxis();
         }
 
-        public static Vector2 GetTriggerAxisOnIndex(uint index)
+        public override Vector2 GetTriggerAxisOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -279,7 +297,7 @@ namespace VRTK
             return device.GetAxis(EVRButtonId.k_EButton_SteamVR_Trigger);
         }
 
-        public static float GetTriggerHairlineDeltaOnIndex(uint index)
+        public override float GetTriggerHairlineDeltaOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -291,37 +309,37 @@ namespace VRTK
 
         //Trigger
 
-        public static bool IsTriggerPressedOnIndex(uint index)
+        public override bool IsTriggerPressedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Press, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsTriggerPressedDownOnIndex(uint index)
+        public override bool IsTriggerPressedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressDown, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsTriggerPressedUpOnIndex(uint index)
+        public override bool IsTriggerPressedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressUp, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsTriggerTouchedOnIndex(uint index)
+        public override bool IsTriggerTouchedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Touch, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsTriggerTouchedDownOnIndex(uint index)
+        public override bool IsTriggerTouchedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchDown, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsTriggerTouchedUpOnIndex(uint index)
+        public override bool IsTriggerTouchedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchUp, SteamVR_Controller.ButtonMask.Trigger);
         }
 
-        public static bool IsHairTriggerDownOnIndex(uint index)
+        public override bool IsHairTriggerDownOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -331,7 +349,7 @@ namespace VRTK
             return device.GetHairTriggerDown();
         }
 
-        public static bool IsHairTriggerUpOnIndex(uint index)
+        public override bool IsHairTriggerUpOnIndex(uint index)
         {
             if (index >= uint.MaxValue)
             {
@@ -343,101 +361,101 @@ namespace VRTK
 
         //Grip
 
-        public static bool IsGripPressedOnIndex(uint index)
+        public override bool IsGripPressedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Press, SteamVR_Controller.ButtonMask.Grip);
         }
 
-        public static bool IsGripPressedDownOnIndex(uint index)
+        public override bool IsGripPressedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressDown, SteamVR_Controller.ButtonMask.Grip);
         }
 
-        public static bool IsGripPressedUpOnIndex(uint index)
+        public override bool IsGripPressedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressUp, SteamVR_Controller.ButtonMask.Grip);
         }
 
-        public static bool IsGripTouchedOnIndex(uint index)
+        public override bool IsGripTouchedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Touch, SteamVR_Controller.ButtonMask.Grip);
         }
 
-        public static bool IsGripTouchedDownOnIndex(uint index)
+        public override bool IsGripTouchedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchDown, SteamVR_Controller.ButtonMask.Grip);
         }
 
-        public static bool IsGripTouchedUpOnIndex(uint index)
+        public override bool IsGripTouchedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchUp, SteamVR_Controller.ButtonMask.Grip);
         }
 
         //Touchpad
 
-        public static bool IsTouchpadPressedOnIndex(uint index)
+        public override bool IsTouchpadPressedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Press, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
-        public static bool IsTouchpadPressedDownOnIndex(uint index)
+        public override bool IsTouchpadPressedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressDown, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
-        public static bool IsTouchpadPressedUpOnIndex(uint index)
+        public override bool IsTouchpadPressedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressUp, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
-        public static bool IsTouchpadTouchedOnIndex(uint index)
+        public override bool IsTouchpadTouchedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Touch, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
-        public static bool IsTouchpadTouchedDownOnIndex(uint index)
+        public override bool IsTouchpadTouchedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchDown, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
-        public static bool IsTouchpadTouchedUpOnIndex(uint index)
+        public override bool IsTouchpadTouchedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchUp, SteamVR_Controller.ButtonMask.Touchpad);
         }
 
         //Application Menu
 
-        public static bool IsApplicationMenuPressedOnIndex(uint index)
+        public override bool IsApplicationMenuPressedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Press, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        public static bool IsApplicationMenuPressedDownOnIndex(uint index)
+        public override bool IsApplicationMenuPressedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressDown, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        public static bool IsApplicationMenuPressedUpOnIndex(uint index)
+        public override bool IsApplicationMenuPressedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.PressUp, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        public static bool IsApplicationMenuTouchedOnIndex(uint index)
+        public override bool IsApplicationMenuTouchedOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.Touch, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        public static bool IsApplicationMenuTouchedDownOnIndex(uint index)
+        public override bool IsApplicationMenuTouchedDownOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchDown, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        public static bool IsApplicationMenuTouchedUpOnIndex(uint index)
+        public override bool IsApplicationMenuTouchedUpOnIndex(uint index)
         {
             return IsButtonPressed(index, ButtonPressTypes.TouchUp, SteamVR_Controller.ButtonMask.ApplicationMenu);
         }
 
-        private static SteamVR_ControllerManager GetControllerManager()
+        private SteamVR_ControllerManager GetControllerManager()
         {
             if (cachedControllerManager == null)
             {
@@ -456,7 +474,7 @@ namespace VRTK
             TouchUp
         }
 
-        private static bool IsButtonPressed(uint index, ButtonPressTypes type, ulong button)
+        private bool IsButtonPressed(uint index, ButtonPressTypes type, ulong button)
         {
             if (index >= uint.MaxValue)
             {
@@ -484,3 +502,4 @@ namespace VRTK
         }
     }
 }
+#endif
