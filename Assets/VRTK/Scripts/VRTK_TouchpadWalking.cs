@@ -59,6 +59,7 @@ namespace VRTK
         private bool rightSubscribed;
         private ControllerInteractionEventHandler touchpadAxisChanged;
         private ControllerInteractionEventHandler touchpadUntouched;
+        private Rigidbody rb;
 
         private void Awake()
         {
@@ -74,6 +75,7 @@ namespace VRTK
             Utilities.SetPlayerObject(gameObject, VRTK_PlayerObject.ObjectTypes.CameraRig);
             SetControllerListeners(controllerLeftHand);
             SetControllerListeners(controllerRightHand);
+            rb = GetComponent<Rigidbody>();
         }
 
         private void DoTouchpadAxisChanged(object sender, ControllerInteractionEventArgs e)
@@ -129,11 +131,21 @@ namespace VRTK
         private void Move()
         {
             var deviceDirector = VRTK_DeviceFinder.DeviceTransform(deviceForDirection);
-            var movement = deviceDirector.forward * movementSpeed * Time.deltaTime;
-            var strafe = deviceDirector.right * strafeSpeed * Time.deltaTime;
-            float fixY = transform.position.y;
-            transform.position += (movement + strafe);
-            transform.position = new Vector3(transform.position.x, fixY, transform.position.z);
+            var movement = deviceDirector.forward * movementSpeed;
+            var strafe = deviceDirector.right * strafeSpeed;
+            var newDirection = (movement + strafe);
+
+            if (rb)
+            {
+                newDirection.y = rb.velocity.y;
+                rb.velocity = newDirection;
+            }
+            else
+            {
+                var fixY = transform.position.y;
+                transform.position += (movement + strafe) * Time.deltaTime;
+                transform.position = new Vector3(transform.position.x, fixY, transform.position.z);
+            }
         }
 
         private void FixedUpdate()
